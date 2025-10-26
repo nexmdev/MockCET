@@ -11,21 +11,34 @@ let timeLeft = 600; // seconds
 let totalTime = timeLeft;
 let timerInterval;
 let quizSubmitted = false;
+let selectedTest = '';
 
 // ======== Fetch Questions ========
-db.ref('questions').once('value', snapshot => {
-  if(snapshot.exists()) {
-    //questions = Object.values(snapshot.val());
-    //displayQuestions();
-    //startTimer();
-     questions = Object.values(snapshot.val());
-        userAnswers = Array(questions.length).fill(-1);
-        displayQuestion(currentQuestion);
-        startTimer();
-        renderTracker();
-  } else {
-    document.getElementById('quiz').innerText = "No questions available.";
-  }
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        const urlParams = new URLSearchParams(window.location.search);
+        selectedTest = urlParams.get('test');
+        if (selectedTest) {
+            db.ref('tests/' + selectedTest).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    const test = snapshot.val();
+                    questions = test.questions;
+                    timeLeft = test.time * 60;
+                    totalTime = timeLeft;
+                    userAnswers = Array(questions.length).fill(-1);
+                    displayQuestion(currentQuestion);
+                    startTimer();
+                    renderTracker();
+                } else {
+                    document.getElementById('quiz').innerText = "Test not found.";
+                }
+            });
+        } else {
+            document.getElementById('quiz').innerText = "No test selected.";
+        }
+    } else {
+        window.location.href = 'login.html';
+    }
 });
 
 // ======== Display Questions ========
@@ -159,7 +172,10 @@ function renderTracker() {
     // ✅ Mark answered (green)
     if (userAnswers[index] !== -1) {
       circle.classList.add('answered');
-    }else if(index === currentQuestion){
+    }
+
+    // Highlight the current question
+    if (index === currentQuestion) {
         circle.classList.add('current');
     }
 
@@ -205,48 +221,67 @@ document.getElementById('submitBtn').addEventListener('click', () => {
 
 // ======== Calculate and Show Result ========
 function calculateResult() {
-quizSubmitted = true; // ✅ Activate wrong answer coloring
-  clearInterval(timerInterval);
-  let score = 0;
-  const quizDiv = document.getElementById('quiz');
-  quizDiv.innerHTML = '';
-
-  questions.forEach((q, i) => {
-    const user = userAnswers[i];
-    if(user === q.answer) score++;
-
-    const questionEl = document.createElement('div');
-    questionEl.classList.add('question');
-    questionEl.innerText = `${i + 1}. ${q.question}`;
-    quizDiv.appendChild(questionEl);
-
-    const ul = document.createElement('ul');
-    ul.classList.add('options');
-
-    q.options.forEach((opt, j) => {
-      const li = document.createElement('li');
-      li.style.padding = "5px 10px";
-      li.style.borderRadius = "5px";
-      li.style.marginBottom = "5px";
-
-      let text = opt;
-      if(j === q.answer){
-      text += " ✅"; // correct answer
-      li.style.backgroundColor = "#c8f7c5";
-      }
-      if(j === user && j !== q.answer) {
-      text += " ❌"; // wrong selection
-      li.style.backgroundColor = "#f7c5c5";
-      }
-      li.innerText = text;
-      ul.appendChild(li);
+    quizSubmitted = true; // ✅ Activate wrong answer coloring
+    clearInterval(timerInterval);
+    let score = 0;
+    questions.forEach((q, i) => {
+        if (userAnswers[i] === q.answer) score++;
     });
 
-    quizDiv.appendChild(ul);
-  });
+    const resultData = {
+        score: score,
+        total: questions.length,
+        percentage: (score / questions.length) * 100,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
 
-  document.getElementById('result').innerText = `Your Score: ${score} / ${questions.length}`;
-  document.getElementById('submitBtn').style.display = 'none';
-  document.getElementById('prevBtn').style.display = 'none';
-  document.getElementById('nextBtn').style.display = 'none';
+    const uid = firebase.auth().currentUser.uid;
+    db.ref(`results/${uid}/${selectedTest}`).set(resultData)
+        .then(() => {
+            console.log('Result saved');
+        })
+        .catch(error => {
+            console.error('Error saving result:', error);
+        });
+
+    // Display the results
+    const quizDiv = document.getElementById('quiz');
+    quizDiv.innerHTML = '';
+    questions.forEach((q, i) => {
+        const user = userAnswers[i];
+        const questionEl = document.createElement('div');
+        questionEl.classList.add('question');
+        questionEl.innerText = `${i + 1}. ${q.question}`;
+        quizDiv.appendChild(questionEl);
+
+        const ul = document.createElement('ul');
+        ul.classList.add('options');
+
+        q.options.forEach((opt, j) => {
+            const li = document.createElement('li');
+            li.style.padding = "5px 10px";
+            li.style.borderRadius = "5px";
+            li.style.marginBottom = "5px";
+
+            let text = opt;
+            if (j === q.answer) {
+                text += " ✅"; // correct answer
+                li.style.backgroundColor = "#c8f7c5";
+            }
+            if (j === user && j !== q.answer) {
+                text += " ❌"; // wrong selection
+                li.style.backgroundColor = "#f7c5c5";
+            }
+            li.innerText = text;
+            ul.appendChild(li);
+        });
+
+        quizDiv.appendChild(ul);
+    });
+
+    document.getElementById('result').innerText = `Your Score: ${score} / ${questions.length}`;
+    document.getElementById('submitBtn').style.display = 'none';
+    document.getElementById('prevBtn').style.display = 'none';
+    document.getElementById('nextBtn').style.display = 'none';
+    renderTracker();
 }

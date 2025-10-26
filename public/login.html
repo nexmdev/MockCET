@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <h1>Login with Phone Number</h1>
+    <input type="text" id="phone-number" placeholder="Enter phone number">
+    <button id="send-otp">Send OTP</button>
+    <br><br>
+    <input type="text" id="otp" placeholder="Enter OTP">
+    <button id="verify-otp">Verify OTP</button>
+    <div id="recaptcha-container"></div>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-database-compat.js"></script>
+    <script src="/__/firebase/init.js"></script>
+    <!-- Custom JS -->
+    <script src="login.js"></script>
+</body>
+</html>

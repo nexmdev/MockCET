@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+</head>
+<body>
+    <h1>Admin Panel</h1>
+    <div id="admin-content" style="display: none;">
+        <h2>Add New Test</h2>
+        <label for="file-upload">Upload Test (CSV or JSON):</label>
+        <input type="file" id="file-upload" accept=".csv, .json"><br><br>
+        <input type="text" id="test-name" placeholder="Test Name"><br>
+        <input type="text" id="test-subject" placeholder="Subject"><br>
+        <input type="number" id="test-marks" placeholder="Marks"><br>
+        <input type="number" id="test-time" placeholder="Time (minutes)"><br><br>
+        <div id="questions-container"></div>
+        <button id="add-question">Add Question</button><br><br>
+        <button id="save-test">Save Test</button>
+    </div>
+    <div id="loading">Loading...</div>
+    <div id="unauthorized" style="display: none;">You are not authorized to view this page.</div>
+
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-database-compat.js"></script>
+    <script src="/__/firebase/init.js"></script>
+
+    <!-- Custom JS -->
+    <script src="admin.js"></script>
+</body>
+</html>
