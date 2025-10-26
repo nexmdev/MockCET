@@ -22,8 +22,8 @@ firebase.auth().onAuthStateChanged(user => {
             db.ref('tests/' + selectedTest).once('value', snapshot => {
                 if (snapshot.exists()) {
                     const test = snapshot.val();
-                    document.getElementById('test-title').innerText = test.name;
-                    questions = test.questions;
+                    document.getElementById('test-title').innerText = test.name || 'Practice Test';
+                    questions = test.questions || [];
                     timeLeft = test.time * 60;
                     totalTime = timeLeft;
                     userAnswers = Array(questions.length).fill(-1);
