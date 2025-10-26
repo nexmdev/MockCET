@@ -5,76 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCQ Quiz App</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; background: #f0f0f0; }
-    .quiz-container { width: 95%; max-width: 500px; background: #fff; padding: 20px; margin-top: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-    h1 { text-align: center; margin-bottom: 20px; }
-    .question { font-weight: bold; margin-bottom: 10px; }
-    .options { list-style: none; padding: 0; }
-    .options li { margin-bottom: 10px; }
-    button { padding: 10px 20px; border: none; background: #007BFF; color: #fff; border-radius: 5px; cursor: pointer; margin: 5px; }
-    button:hover { background: #0056b3; }
-    .timer { font-size: 12px; margin-bottom: 10px; color: red; text-align: right; }
-    #navigation { display: flex; justify-content: space-between; margin-top: 10px; }
-    .answer { color: green; font-weight: bold; margin-top: 5px; }
-    .progress-bar { width: 100%; background: #ddd; border-radius: 10px; overflow: hidden; height: 5px; margin-bottom: 10px; }
-    .progress { height: 100%; background: #007BFF; width: 100%; transition: width 1s linear; }
-    .tracker {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 1px;
-}
-
-#questionTracker {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  white-space: nowrap;
-  padding: 10px 0;
-}
-
-/* Basic number circle */
-#questionTracker .q-num {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  background: #d3d3d3; /* Unanswered = gray */
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-/* Answered = Green */
-#questionTracker .answered {
-  background: #4caf50;
-  color: #fff;
-}
-
-/* Current Question = Blue */
-#questionTracker .current {
-  border: 3px solid #1e90ff;
-  color: #1e90ff;
-  background: white;
-  font-weight: bold;
-}
-
-/* Incorrect after submit = Red */
-#questionTracker .wrong {
-  background: #ff6b6b;
-  color: #fff;
-}
-  </style>
 </head>
 <body>
 
 <div class="quiz-container">
-  <img style="width:100px;display: inline-block ;margin-bottom:10px;vertical-align:middle;" src="mockCET-logo.jpg"/>
-  <span style="display: inline-block;margin-bottom:10px;vertical-align:middle;margin-left:50px;">Practice Test for Amines</span>
+  <img src="mockCET-logo.jpg" alt="Logo" class="logo">
+  <h2 id="test-title"></h2>
   <div class="progress-bar"><div id="progress" class="progress"></div></div>
   <div id="questionTracker" class="tracker"></div>
   <div class="timer" id="timer">Remaining Time: 60s</div>
@@ -84,9 +20,9 @@
     <button id="nextBtn">Next</button>
   </div>
 
-  <button id="submitBtn" style="margin-top:10px;display: none;">Submit Quiz</button>
+  <button id="submitBtn" style="display: none;">Submit Quiz</button>
 
-  <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
+  <div id="result" class="result-text"></div>
 </div>
 
 <!-- Firebase SDK -->
