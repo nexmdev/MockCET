@@ -5,12 +5,28 @@ auth.onAuthStateChanged(user => {
     if (user) {
         // User is signed in.
         const uid = user.uid;
+        db.ref('users/' + uid).once('value', snapshot => {
+            if (snapshot.exists()) {
+                const userRole = snapshot.val().role;
+                if (userRole === 'admin') {
+                    displayAdminLink();
+                }
+            }
+        });
         loadTests(uid);
     } else {
         // No user is signed in.
         window.location.href = 'login.html';
     }
 });
+
+function displayAdminLink() {
+    const adminLinkContainer = document.getElementById('admin-link-container');
+    const adminLink = document.createElement('a');
+    adminLink.href = 'admin.html';
+    adminLink.innerText = 'Go to Admin Panel';
+    adminLinkContainer.appendChild(adminLink);
+}
 
 function loadTests(uid) {
     const testListDiv = document.getElementById('test-list');
