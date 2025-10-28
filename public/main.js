@@ -5,14 +5,9 @@ auth.onAuthStateChanged(user => {
     if (user) {
         // User is signed in.
         const uid = user.uid;
-        db.ref('users/' + uid).once('value', snapshot => {
-            if (snapshot.exists()) {
-                const userRole = snapshot.val().role;
-                if (userRole === 'admin') {
-                    displayAdminLink();
-                }
-            }
-        });
+        if (user.email === 'admin@mockcet.com') {
+            displayAdminLink();
+        }
         loadTests(uid);
     } else {
         // No user is signed in.
@@ -29,52 +24,69 @@ function displayAdminLink() {
 }
 
 function loadTests(uid) {
-    const testListDiv = document.getElementById('test-list');
-    testListDiv.innerHTML = '<h2>Loading tests...</h2>';
-
-    const testsRef = db.ref('tests');
+    const testsRef = db.ref('allTests').orderByChild('createdAt');
     const resultsRef = db.ref('results/' + uid);
 
     Promise.all([testsRef.once('value'), resultsRef.once('value')]).then(([testsSnapshot, resultsSnapshot]) => {
+        const physicsTab = document.getElementById('Physics');
+        const chemistryTab = document.getElementById('Chemistry');
+        const mathsTab = document.getElementById('Maths');
+
+        physicsTab.innerHTML = '';
+        chemistryTab.innerHTML = '';
+        mathsTab.innerHTML = '';
+
         if (testsSnapshot.exists()) {
             const tests = testsSnapshot.val();
             const results = resultsSnapshot.exists() ? resultsSnapshot.val() : {};
-            const categorizedTests = {};
 
-            // Categorize tests
-            for (const testName in tests) {
-                const test = tests[testName];
-                if (!categorizedTests[test.subject]) {
-                    categorizedTests[test.subject] = [];
+            const sortedTests = Object.entries(tests).sort((a, b) => b[1].createdAt - a[1].createdAt);
+
+            for (const [testId, test] of sortedTests) {
+                const testResult = results[testId];
+                const testElement = document.createElement('div');
+                testElement.className = 'test-listing';
+                testElement.innerHTML = `
+                    <div class="test-card-subject-${test.subject.toLowerCase()}"></div>
+                    <div class="test-card-content">
+                        <h3>${test.test_name}</h3>
+                        <p class="test-info">
+                            <span title="Number of Questions">📝 ${test.info.questions}</span> |
+                            <span title="Time">⏱️ ${test.info.time} min</span>
+                        </p>
+                        <p class="test-score">Score: ${testResult ? `${testResult.score}/${testResult.total}` : 'Unattempted'}</p>
+                        <button onclick="startTest('${testId}')">Start Test</button>
+                    </div>
+                `;
+
+                if (test.subject === 'Physics') {
+                    physicsTab.appendChild(testElement);
+                } else if (test.subject === 'Chemistry') {
+                    chemistryTab.appendChild(testElement);
+                } else if (test.subject === 'Maths') {
+                    mathsTab.appendChild(testElement);
                 }
-                categorizedTests[test.subject].push({ ...test, testName });
-            }
-
-            testListDiv.innerHTML = '';
-            for (const subject in categorizedTests) {
-                const subjectHeader = document.createElement('h2');
-                subjectHeader.innerText = subject;
-                testListDiv.appendChild(subjectHeader);
-
-                categorizedTests[subject].forEach(test => {
-                    const testResult = results[test.testName];
-                    const testElement = document.createElement('div');
-                    testElement.innerHTML = `
-                        <h3>${test.name}</h3>
-                        <p>Marks: ${test.marks}</p>
-                        <p>Time: ${test.time} minutes</p>
-                        <p>Last Score: ${testResult ? `${testResult.score}/${testResult.total} on ${new Date(testResult.timestamp).toLocaleDateString()}` : 'Not Attempted'}</p>
-                        <button onclick="startTest('${test.testName}')">Start Test</button>
-                    `;
-                    testListDiv.appendChild(testElement);
-                });
             }
         } else {
-            testListDiv.innerHTML = '<h2>No tests available.</h2>';
+            physicsTab.innerHTML = '<h2>No tests available.</h2>';
         }
     });
 }
 
-function startTest(testName) {
-    window.location.href = `quiz.html?test=${testName}`;
+function startTest(testId) {
+    window.location.href = `quiz.html?test=${testId}`;
+}
+
+function openTab(evt, subjectName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab-link");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(subjectName).style.display = "block";
+    evt.currentTarget.className += " active";
 }

@@ -19,12 +19,17 @@ firebase.auth().onAuthStateChanged(user => {
         const urlParams = new URLSearchParams(window.location.search);
         selectedTest = urlParams.get('test');
         if (selectedTest) {
-            db.ref('tests/' + selectedTest).once('value', snapshot => {
-                if (snapshot.exists()) {
-                    const test = snapshot.val();
-                    document.getElementById('test-title').innerText = test.name || 'Practice Test';
-                    questions = test.questions || [];
-                    timeLeft = test.time * 60;
+            const testMetaRef = db.ref('allTests/' + selectedTest);
+            const testQuestionsRef = db.ref('test/' + selectedTest);
+
+            Promise.all([testMetaRef.once('value'), testQuestionsRef.once('value')]).then(([metaSnapshot, questionsSnapshot]) => {
+                if (metaSnapshot.exists() && questionsSnapshot.exists()) {
+                    const testMeta = metaSnapshot.val();
+                    const testQuestions = questionsSnapshot.val();
+
+                    document.getElementById('test-title').innerText = testMeta.test_name || 'Practice Test';
+                    questions = testQuestions || [];
+                    timeLeft = testMeta.info.time * 60;
                     totalTime = timeLeft;
                     userAnswers = Array(questions.length).fill(-1);
                     displayQuestion(currentQuestion);

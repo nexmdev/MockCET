@@ -3,16 +3,13 @@ const auth = firebase.auth();
 
 auth.onAuthStateChanged(user => {
     if (user) {
-        const uid = user.uid;
-        db.ref('users/' + uid).once('value', snapshot => {
-            if (snapshot.exists() && snapshot.val().role === 'admin') {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('admin-content').style.display = 'block';
-            } else {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('unauthorized').style.display = 'block';
-            }
-        });
+        if (user.email === 'admin@mockcet.com') {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('admin-content').style.display = 'block';
+        } else {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('unauthorized').style.display = 'block';
+        }
     } else {
         window.location.href = 'login.html';
     }
@@ -130,22 +127,15 @@ function populateTestData(data) {
 saveTestButton.addEventListener('click', () => {
     const testName = testNameInput.value;
     const testSubject = document.getElementById('test-subject').value;
-    const testMarks = document.getElementById('test-marks').value;
+    const unitName = document.getElementById('unit-name').value;
     const testTime = document.getElementById('test-time').value;
 
-    if (!testName || !testSubject || !testMarks || !testTime) {
+    if (!testName || !testSubject || !unitName || !testTime) {
         alert('Please fill in all test details.');
         return;
     }
 
-    const testData = {
-        name: testName,
-        subject: testSubject,
-        marks: parseInt(testMarks),
-        time: parseInt(testTime),
-        questions: []
-    };
-
+    const questions = [];
     for (let i = 1; i <= questionCount; i++) {
         const questionText = document.getElementById(`q${i}-text`).value;
         const options = [
@@ -157,7 +147,7 @@ saveTestButton.addEventListener('click', () => {
         const answer = parseInt(document.getElementById(`q${i}-ans`).value);
 
         if (questionText && options.every(opt => opt) && !isNaN(answer)) {
-            testData.questions.push({
+            questions.push({
                 question: questionText,
                 options: options,
                 answer: answer
@@ -165,11 +155,31 @@ saveTestButton.addEventListener('click', () => {
         }
     }
 
-    if (testData.questions.length > 0) {
-        db.ref('tests/' + testName).set(testData)
+    if (questions.length > 0) {
+        const newTestKey = db.ref().child('allTests').push().key;
+
+        const testMetaData = {
+            test_name: testName,
+            subject: testSubject,
+            unit_name: unitName,
+            info: {
+                questions: questions.length,
+                time: parseInt(testTime)
+            },
+            createdAt: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        const updates = {};
+        updates['/allTests/' + newTestKey] = testMetaData;
+        updates['/test/' + newTestKey] = questions;
+
+        db.ref().update(updates)
             .then(() => {
                 alert('Test saved successfully!');
                 testNameInput.value = '';
+                document.getElementById('test-subject').value = '';
+                document.getElementById('unit-name').value = '';
+                document.getElementById('test-time').value = '';
                 questionsContainer.innerHTML = '';
                 questionCount = 0;
             })
