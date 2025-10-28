@@ -9,7 +9,7 @@
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; background: #f0f0f0; }
     .quiz-container { width: 95%; max-width: 500px; background: #fff; padding: 20px; margin-top: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
     h1 { text-align: center; margin-bottom: 20px; }
-    .question { font-weight: bold; margin-bottom: 10px; }
+    .question { font-weight: bold; margin-top:10px;margin-bottom: 10px;text-align:left; }
     .options { list-style: none; padding: 0; }
     .options li { margin-bottom: 10px; }
     button { padding: 10px 20px; border: none; background: #007BFF; color: #fff; border-radius: 5px; cursor: pointer; margin: 5px; }
@@ -74,10 +74,11 @@
 
 <div class="quiz-container">
   <img style="width:100px;display: inline-block ;margin-bottom:10px;vertical-align:middle;" src="mockCET-logo.jpg"/>
-  <span style="display: inline-block;margin-bottom:10px;vertical-align:middle;margin-left:50px;">Practice Test for Amines</span>
+  <span id="test-title" style="display: inline-block;margin-bottom:10px;vertical-align:middle;margin-left:50px;">Practice Test for Amines</span>
   <div class="progress-bar"><div id="progress" class="progress"></div></div>
-  <div id="questionTracker" class="tracker"></div>
   <div class="timer" id="timer">Remaining Time: 60s</div>
+  <div id="questionTracker" class="tracker"></div>
+  <div id="result" style="margin-top: 20px;margin-bottom: 20px; font-weight: bold; background: #FAFD04;padding:10px;display:none;"></div>
   <div id="quiz"></div>
   <div id="navigation">
     <button id="prevBtn">Previous</button>
@@ -86,7 +87,7 @@
 
   <button id="submitBtn" style="margin-top:10px;display: none;">Submit Quiz</button>
 
-  <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
+
 </div>
 
 <!-- Firebase SDK -->

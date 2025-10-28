@@ -77,7 +77,9 @@ function displayQuestion(index) {
 
   const questionEl = document.createElement('div');
   questionEl.classList.add('question');
-  questionEl.innerText = `${index + 1}. ${q.question}`;
+  //questionEl.innerText = `${index + 1}. ${q.question}`;
+  questionEl.innerHTML = `${index + 1}. ${q.question}`;
+
   quizDiv.appendChild(questionEl);
 
   const ul = document.createElement('ul');
@@ -141,6 +143,7 @@ document.getElementById('prevBtn').addEventListener('click', () => {
   saveAnswer();
   if(currentQuestion > 0) currentQuestion--;
   displayQuestion(currentQuestion);
+  renderTracker();
 });
 
 document.getElementById('nextBtn').addEventListener('click', () => {
@@ -148,6 +151,7 @@ document.getElementById('nextBtn').addEventListener('click', () => {
   if(currentQuestion < questions.length-1) currentQuestion++;
   if(currentQuestion == questions.length-1) document.getElementById('submitBtn').style.display = 'block';
   displayQuestion(currentQuestion);
+  renderTracker();
 });
 function autoScrollTracker() {
   const tracker = document.getElementById('questionTracker');
@@ -210,7 +214,7 @@ function renderTracker() {
 function saveAnswer() {
   const selected = document.querySelector(`input[name="q${currentQuestion}"]:checked`);
   userAnswers[currentQuestion] = selected ? parseInt(selected.value) : -1;
-  renderTracker();
+
 }
 
 // ======== Submit Quiz ========
@@ -228,7 +232,8 @@ function calculateResult() {
     questions.forEach((q, i) => {
         if (userAnswers[i] === q.answer) score++;
     });
-
+    document.getElementById('result').style.display = 'block';
+document.getElementById('result').innerText = `Your Score: ${score} / ${questions.length}`;
     const resultData = {
         score: score,
         total: questions.length,
@@ -252,7 +257,7 @@ function calculateResult() {
         const user = userAnswers[i];
         const questionEl = document.createElement('div');
         questionEl.classList.add('question');
-        questionEl.innerText = `${i + 1}. ${q.question}`;
+        questionEl.innerHTML = `${i + 1}. ${q.question}`;
         quizDiv.appendChild(questionEl);
 
         const ul = document.createElement('ul');
@@ -273,14 +278,14 @@ function calculateResult() {
                 text += " ❌"; // wrong selection
                 li.style.backgroundColor = "#f7c5c5";
             }
-            li.innerText = text;
+            li.innerHTML = text;
             ul.appendChild(li);
         });
 
         quizDiv.appendChild(ul);
     });
 
-    document.getElementById('result').innerText = `Your Score: ${score} / ${questions.length}`;
+
     document.getElementById('submitBtn').style.display = 'none';
     document.getElementById('prevBtn').style.display = 'none';
     document.getElementById('nextBtn').style.display = 'none';
