@@ -96,9 +96,6 @@ function populateTestData(data) {
     if (data.subject) {
         document.getElementById('test-subject').value = data.subject;
     }
-    if (data.marks) {
-        document.getElementById('test-marks').value = data.marks;
-    }
     if (data.time) {
         document.getElementById('test-time').value = data.time;
     }

@@ -1,237 +1,194 @@
 
-
-
 const db = firebase.database();
 
 // ======== Global Variables ========
 let questions = [];
 let currentQuestion = 0;
 let userAnswers = [];
-let timeLeft = 600; // seconds
+let timeLeft = 600; // Default, will be updated
 let totalTime = timeLeft;
 let timerInterval;
 let quizSubmitted = false;
-let selectedTest = '';
+let selectedTestId = '';
 
 // ======== Fetch Questions ========
 firebase.auth().onAuthStateChanged(user => {
     if (user) {
         const urlParams = new URLSearchParams(window.location.search);
-        selectedTest = urlParams.get('test');
-        if (selectedTest) {
-            const testMetaRef = db.ref('allTests/' + selectedTest);
-            const testQuestionsRef = db.ref('test/' + selectedTest);
-
-            Promise.all([testMetaRef.once('value'), testQuestionsRef.once('value')]).then(([metaSnapshot, questionsSnapshot]) => {
-                if (metaSnapshot.exists() && questionsSnapshot.exists()) {
-                    const testMeta = metaSnapshot.val();
-                    const testQuestions = questionsSnapshot.val();
-
-                    document.getElementById('test-title').innerText = testMeta.test_name || 'Practice Test';
-                    questions = testQuestions || [];
-                    timeLeft = testMeta.info.time * 60;
-                    totalTime = timeLeft;
-                    userAnswers = Array(questions.length).fill(-1);
-                    displayQuestion(currentQuestion);
-                    startTimer();
-                    renderTracker();
-                } else {
-                    document.getElementById('quiz').innerText = "Test not found.";
-                }
-            });
+        selectedTestId = urlParams.get('test');
+        if (selectedTestId) {
+            loadQuizData(selectedTestId);
         } else {
-            document.getElementById('quiz').innerText = "No test selected.";
+            document.getElementById('quiz-container').innerHTML = "<h1>No test selected.</h1>";
         }
     } else {
         window.location.href = 'login.html';
     }
 });
 
-// ======== Display Questions ========
-/*function displayQuestions() {
-  const quizDiv = document.getElementById('quiz');
-  quizDiv.innerHTML = '';
+function loadQuizData(testId) {
+    const testMetaRef = db.ref('allTests/' + testId);
+    const testQuestionsRef = db.ref('test/' + testId);
 
-  questions.forEach((q, index) => {
-    const qDiv = document.createElement('div');
-    qDiv.classList.add('question-block');
+    Promise.all([testMetaRef.once('value'), testQuestionsRef.once('value')])
+        .then(([metaSnapshot, questionsSnapshot]) => {
+            if (metaSnapshot.exists() && questionsSnapshot.exists()) {
+                const testMeta = metaSnapshot.val();
+                questions = questionsSnapshot.val() || [];
 
-    const questionEl = document.createElement('div');
-    questionEl.classList.add('question');
-   questionEl.innerText = `${index + 1}. ${q.question}`;
-    qDiv.appendChild(questionEl);
+                if (!questions || questions.length === 0) {
+                    document.getElementById('quiz-container').innerHTML = "<h1>This test has no questions.</h1>";
+                    return;
+                }
 
-    const ul = document.createElement('ul');
-    ul.classList.add('options');
+                document.getElementById('test-title').innerText = testMeta.test_name || 'Practice Test';
+                timeLeft = (testMeta.info && testMeta.info.time) ? testMeta.info.time * 60 : 600;
+                totalTime = timeLeft;
+                userAnswers = Array(questions.length).fill(null);
 
-    q.options.forEach((opt, i) => {
-      const li = document.createElement('li');
-      li.innerHTML = `<input type="radio" name="q${index}" value="${i}"> ${opt}`;
-      ul.appendChild(li);
-    });
+                displayQuestion(currentQuestion);
+                renderTracker();
+                startTimer();
+            } else {
+                document.getElementById('quiz-container').innerHTML = "<h1>Test not found.</h1>";
+            }
+        })
+        .catch(error => {
+            console.error("Error loading test data:", error);
+            document.getElementById('quiz-container').innerHTML = "<h1>Error loading test. Please try again.</h1>";
+        });
+}
 
-    qDiv.appendChild(ul);
-    quizDiv.appendChild(qDiv);
-  });
-}*/
+
 // ======== Display Single Question ========
 function displayQuestion(index) {
-  const quizDiv = document.getElementById('quiz');
-  quizDiv.innerHTML = '';
-  const q = questions[index];
+    const questionContainer = document.getElementById('question-container');
+    questionContainer.innerHTML = '';
+    const q = questions[index];
 
-  const questionEl = document.createElement('div');
-  questionEl.classList.add('question');
-  questionEl.innerText = `${index + 1}. ${q.question}`;
-  quizDiv.appendChild(questionEl);
+    if (!q) return;
 
-  const ul = document.createElement('ul');
-  ul.classList.add('options');
+    const questionEl = document.createElement('div');
+    questionEl.className = 'question';
+    questionEl.innerHTML = `<p>${index + 1}. ${q.question}</p>`;
 
-  q.options.forEach((opt, i) => {
-    const li = document.createElement('li');
-    li.innerHTML = `<input type="radio" name="q${index}" value="${i}" ${userAnswers[index]===i?'checked':''}> ${opt}`;
-    ul.appendChild(li);
-  });
+    const optionsUl = document.createElement('ul');
+    optionsUl.className = 'options';
 
-  quizDiv.appendChild(ul);
+    q.options.forEach((option, i) => {
+        const optionLi = document.createElement('li');
+        optionLi.innerHTML = `
+            <label>
+                <input type="radio" name="question${index}" value="${i}" ${userAnswers[index] === i ? 'checked' : ''}>
+                ${option}
+            </label>
+        `;
+        optionsUl.appendChild(optionLi);
+    });
 
-  // Disable prev/next buttons at edges
-  document.getElementById('prevBtn').disabled = (index===0);
-  document.getElementById('nextBtn').disabled = (index===questions.length-1);
+    questionContainer.appendChild(questionEl);
+    questionContainer.appendChild(optionsUl);
+
+    updateNavigationButtons();
+    renderTracker();
+}
+
+function updateNavigationButtons() {
+    document.getElementById('prevBtn').disabled = (currentQuestion === 0);
+    document.getElementById('nextBtn').disabled = (currentQuestion === questions.length - 1);
+    document.getElementById('submitBtn').style.display = (currentQuestion === questions.length - 1) ? 'inline-block' : 'none';
 }
 
 // ======== Timer ========
 function startTimer() {
-  const timerEl = document.getElementById('timer');
-  const progressEl = document.getElementById('progress');
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    const minutes = Math.floor(timeLeft / 60);
+    const timerEl = document.getElementById('timer');
+    const progressEl = document.getElementById('progress-bar-inner');
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
-        timerEl.innerText = `Time: ${minutes}:${seconds.toString().padStart(2,'0')}`;
-    progressEl.style.width = `${(timeLeft / totalTime) * 100}%`;
-    if(timeLeft <= 0) {
-      clearInterval(timerInterval);
-      calculateResult();
-    }
-  }, 1000);
+        timerEl.innerText = `Time Left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        progressEl.style.width = `${(timeLeft / totalTime) * 100}%`;
+
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            submitQuiz();
+        }
+    }, 1000);
 }
 
-// ======== Submit Button ========
-/*document.getElementById('submitBtn').addEventListener('click', () => {
-  clearInterval(timerInterval);
-  calculateResult();
-});
-
-// ======== Calculate Result ========
-function calculateResult() {
-  userAnswers = [];
-  questions.forEach((q, index) => {
-    const selected = document.querySelector(`input[name="q${index}"]:checked`);
-    userAnswers.push(selected ? parseInt(selected.value) : -1);
-  });
-
-  let score = 0;
-  questions.forEach((q, i) => {
-    if(userAnswers[i] === q.answer) score++;
-  });
-
-document.getElementById('result').innerText = `Your Score: ${score} / ${questions.length}`;
-
-  document.getElementById('submitBtn').disabled = true;
-}*/
 // ======== Navigation ========
 document.getElementById('prevBtn').addEventListener('click', () => {
-  saveAnswer();
-  if(currentQuestion > 0) currentQuestion--;
-  displayQuestion(currentQuestion);
+    saveAnswer();
+    if (currentQuestion > 0) {
+        currentQuestion--;
+        displayQuestion(currentQuestion);
+    }
 });
 
 document.getElementById('nextBtn').addEventListener('click', () => {
-  saveAnswer();
-  if(currentQuestion < questions.length-1) currentQuestion++;
-  if(currentQuestion == questions.length-1) document.getElementById('submitBtn').style.display = 'block';
-  displayQuestion(currentQuestion);
-});
-function autoScrollTracker() {
-  const tracker = document.getElementById('questionTracker');
-  const activeCircle = tracker.children[currentQuestion];
-
-  if (activeCircle) {
-    activeCircle.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest"
-    });
-  }
-}
-function renderTracker() {
-  const tracker = document.getElementById('questionTracker');
-  tracker.innerHTML = '';
-
-  questions.forEach((q, index) => {
-    const circle = document.createElement('div');
-    circle.classList.add('q-num');
-    circle.innerText = index + 1;
-
-    // ✅ Mark answered (green)
-    if (userAnswers[index] !== -1) {
-      circle.classList.add('answered');
-    }
-
-    // Highlight the current question
-    if (index === currentQuestion) {
-        circle.classList.add('current');
-    }
-
-
-
-    // ❌ After submission – show wrong answers in red
-    if (quizSubmitted) {
-      if (userAnswers[index] !== q.answer) {
-        circle.classList.remove('answered');
-        circle.classList.add('wrong');
-      }
-    }
-
-    // Click to jump to question
-    circle.addEventListener('click', () => {
-      if (!quizSubmitted) {
-        saveAnswer();
-        currentQuestion = index;
+    saveAnswer();
+    if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
         displayQuestion(currentQuestion);
-        renderTracker();
-        autoScrollTracker();
-      }
+    }
+});
+
+// ======== Tracker ========
+function renderTracker() {
+    const tracker = document.getElementById('question-tracker');
+    tracker.innerHTML = '';
+
+    questions.forEach((q, index) => {
+        const circle = document.createElement('div');
+        circle.className = 'q-tracker-item';
+        circle.innerText = index + 1;
+        if (index === currentQuestion) {
+            circle.classList.add('current');
+        }
+        if (userAnswers[index] !== null) {
+            circle.classList.add('answered');
+        }
+        if (quizSubmitted) {
+            if (userAnswers[index] !== q.answer) {
+                 circle.classList.add('wrong');
+            }
+        }
+
+        circle.addEventListener('click', () => {
+            if (!quizSubmitted) {
+                saveAnswer();
+                currentQuestion = index;
+                displayQuestion(currentQuestion);
+            }
+        });
+        tracker.appendChild(circle);
     });
-
-    tracker.appendChild(circle);
-  });
-
-  autoScrollTracker();
 }
+
 // ======== Save Answer ========
 function saveAnswer() {
-  const selected = document.querySelector(`input[name="q${currentQuestion}"]:checked`);
-  userAnswers[currentQuestion] = selected ? parseInt(selected.value) : -1;
-  renderTracker();
+    const selected = document.querySelector(`input[name="question${currentQuestion}"]:checked`);
+    if (selected) {
+        userAnswers[currentQuestion] = parseInt(selected.value);
+    }
 }
 
 // ======== Submit Quiz ========
 document.getElementById('submitBtn').addEventListener('click', () => {
-  saveAnswer();
-  clearInterval(timerInterval);
-  calculateResult();
+    saveAnswer();
+    submitQuiz();
 });
 
-// ======== Calculate and Show Result ========
-function calculateResult() {
-    quizSubmitted = true; // ✅ Activate wrong answer coloring
+function submitQuiz() {
+    quizSubmitted = true;
     clearInterval(timerInterval);
+
     let score = 0;
-    questions.forEach((q, i) => {
-        if (userAnswers[i] === q.answer) score++;
+    userAnswers.forEach((answer, index) => {
+        if (answer === questions[index].answer) {
+            score++;
+        }
     });
 
     const resultData = {
@@ -242,52 +199,55 @@ function calculateResult() {
     };
 
     const uid = firebase.auth().currentUser.uid;
-    db.ref(`results/${uid}/${selectedTest}`).set(resultData)
+    db.ref(`results/${uid}/${selectedTestId}`).set(resultData)
         .then(() => {
             console.log('Result saved');
+            displayResults(score);
         })
         .catch(error => {
             console.error('Error saving result:', error);
+            // Still display results even if saving fails
+            displayResults(score);
         });
+}
 
-    // Display the results
-    const quizDiv = document.getElementById('quiz');
-    quizDiv.innerHTML = '';
-    questions.forEach((q, i) => {
-        const user = userAnswers[i];
-        const questionEl = document.createElement('div');
-        questionEl.classList.add('question');
-        questionEl.innerText = `${i + 1}. ${q.question}`;
-        quizDiv.appendChild(questionEl);
+// ======== Display Results ========
+function displayResults(score) {
+    const quizContainer = document.getElementById('quiz-container');
+    quizContainer.innerHTML = `
+        <div class="result-summary">
+            <h2>Quiz Complete!</h2>
+            <p>Your Score: ${score} / ${questions.length}</p>
+        </div>
+    `;
 
-        const ul = document.createElement('ul');
-        ul.classList.add('options');
+    questions.forEach((q, index) => {
+        const resultEl = document.createElement('div');
+        resultEl.className = 'result-question';
+        let resultClass = '';
+        let resultIndicator = '';
 
-        q.options.forEach((opt, j) => {
-            const li = document.createElement('li');
-            li.style.padding = "5px 10px";
-            li.style.borderRadius = "5px";
-            li.style.marginBottom = "5px";
+        if (userAnswers[index] === q.answer) {
+            resultClass = 'correct';
+            resultIndicator = '✔️';
+        } else {
+            resultClass = 'incorrect';
+            resultIndicator = '❌';
+        }
 
-            let text = opt;
-            if (j === q.answer) {
-                text += " ✅"; // correct answer
-                li.style.backgroundColor = "#c8f7c5";
-            }
-            if (j === user && j !== q.answer) {
-                text += " ❌"; // wrong selection
-                li.style.backgroundColor = "#f7c5c5";
-            }
-            li.innerText = text;
-            ul.appendChild(li);
-        });
+        let optionsHtml = q.options.map((option, i) => {
+            let className = '';
+            if (i === q.answer) className = 'correct-option';
+            if (i === userAnswers[index] && i !== q.answer) className = 'incorrect-option';
+            return `<li class="${className}">${option}</li>`;
+        }).join('');
 
-        quizDiv.appendChild(ul);
+        resultEl.innerHTML = `
+            <p class="question-title">${index + 1}. ${q.question} <span class="result-indicator ${resultClass}">${resultIndicator}</span></p>
+            <ul class="result-options">${optionsHtml}</ul>
+        `;
+        quizContainer.appendChild(resultEl);
     });
 
-    document.getElementById('result').innerText = `Your Score: ${score} / ${questions.length}`;
-    document.getElementById('submitBtn').style.display = 'none';
-    document.getElementById('prevBtn').style.display = 'none';
-    document.getElementById('nextBtn').style.display = 'none';
-    renderTracker();
+    renderTracker(); // Re-render tracker to show incorrect answers
 }

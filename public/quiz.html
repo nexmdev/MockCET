@@ -1,43 +1,55 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCQ Quiz App</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockCET Quiz</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
     <div class="navbar">
-        <div class="navbar-brand">MockCET Practice Tests</div>
+        <div class="navbar-brand">
+            <img src="mockCET-logo.jpg" alt="Logo" class="navbar-logo">
+            <span>MockCET Practice Tests</span>
+        </div>
         <div class="navbar-links">
             <a href="main.html">Home</a>
             <button id="logout-btn" style="display:none;">Logout</button>
         </div>
     </div>
-<div class="quiz-container">
-  <img src="mockCET-logo.jpg" alt="Logo" class="logo">
-  <h2 id="test-title"></h2>
-  <div class="progress-bar"><div id="progress" class="progress"></div></div>
-  <div id="questionTracker" class="tracker"></div>
-  <div class="timer" id="timer">Remaining Time: 60s</div>
-  <div id="quiz"></div>
-  <div id="navigation">
-    <button id="prevBtn">Previous</button>
-    <button id="nextBtn">Next</button>
-  </div>
 
-  <button id="submitBtn" style="display: none;">Submit Quiz</button>
+    <div id="quiz-container" class="quiz-container">
+        <h2 id="test-title">Loading Test...</h2>
 
-  <div id="result" class="result-text"></div>
-</div>
+        <div class="quiz-header">
+            <div id="timer">Time Left: --:--</div>
+            <div class="progress-bar-container">
+                <div id="progress-bar-inner"></div>
+            </div>
+        </div>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-database-compat.js"></script>
+        <div id="question-tracker" class="q-tracker-container"></div>
 
-<script src="/__/firebase/init.js"></script>
-<!-- Custom JS -->
-<script src="app.js"></script>
-<script src="quiz.js"></script>
+        <div id="question-container">
+            <!-- Questions will be loaded here by JavaScript -->
+        </div>
+
+        <div class="navigation-buttons">
+            <button id="prevBtn" disabled>Previous</button>
+            <button id="nextBtn" disabled>Next</button>
+            <button id="submitBtn" style="display: none;">Submit Quiz</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.4.0/firebase-database-compat.js"></script>
+
+    <!-- Custom JS -->
+    <script src="app.js"></script>
+    <script src="quiz.js"></script>
 </body>
 </html>
